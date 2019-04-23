@@ -170,7 +170,7 @@ def test_fails_with_int_message(app):
 
     expected_error = (
         r'Value "not_int" for parameter `foo` '
-        r'does not match pattern for type `int`: -?\d+'
+        r"does not match pattern for type `int`: -?\d+"
     )
     assert str(e.value) == expected_error
 

@@ -529,36 +529,54 @@ def test_request_string_representation(app):
 @pytest.mark.parametrize(
     "payload,filename",
     [
-        ("------sanic\r\n"
-         'Content-Disposition: form-data; filename="filename"; name="test"\r\n'
-         "\r\n"
-         "OK\r\n"
-         "------sanic--\r\n", "filename"),
-        ("------sanic\r\n"
-         'content-disposition: form-data; filename="filename"; name="test"\r\n'
-         "\r\n"
-         'content-type: application/json; {"field": "value"}\r\n'
-         "------sanic--\r\n", "filename"),
-        ("------sanic\r\n"
-         'Content-Disposition: form-data; filename=""; name="test"\r\n'
-         "\r\n"
-         "OK\r\n"
-         "------sanic--\r\n", ""),
-        ("------sanic\r\n"
-         'content-disposition: form-data; filename=""; name="test"\r\n'
-         "\r\n"
-         'content-type: application/json; {"field": "value"}\r\n'
-         "------sanic--\r\n", ""),
-        ("------sanic\r\n"
-         'Content-Disposition: form-data; filename*="utf-8\'\'filename_%C2%A0_test"; name="test"\r\n'
-         "\r\n"
-         "OK\r\n"
-         "------sanic--\r\n", "filename_\u00A0_test"),
-        ("------sanic\r\n"
-         'content-disposition: form-data; filename*="utf-8\'\'filename_%C2%A0_test"; name="test"\r\n'
-         "\r\n"
-         'content-type: application/json; {"field": "value"}\r\n'
-         "------sanic--\r\n", "filename_\u00A0_test"),
+        (
+            "------sanic\r\n"
+            'Content-Disposition: form-data; filename="filename"; name="test"\r\n'
+            "\r\n"
+            "OK\r\n"
+            "------sanic--\r\n",
+            "filename",
+        ),
+        (
+            "------sanic\r\n"
+            'content-disposition: form-data; filename="filename"; name="test"\r\n'
+            "\r\n"
+            'content-type: application/json; {"field": "value"}\r\n'
+            "------sanic--\r\n",
+            "filename",
+        ),
+        (
+            "------sanic\r\n"
+            'Content-Disposition: form-data; filename=""; name="test"\r\n'
+            "\r\n"
+            "OK\r\n"
+            "------sanic--\r\n",
+            "",
+        ),
+        (
+            "------sanic\r\n"
+            'content-disposition: form-data; filename=""; name="test"\r\n'
+            "\r\n"
+            'content-type: application/json; {"field": "value"}\r\n'
+            "------sanic--\r\n",
+            "",
+        ),
+        (
+            "------sanic\r\n"
+            'Content-Disposition: form-data; filename*="utf-8\'\'filename_%C2%A0_test"; name="test"\r\n'
+            "\r\n"
+            "OK\r\n"
+            "------sanic--\r\n",
+            "filename_\u00A0_test",
+        ),
+        (
+            "------sanic\r\n"
+            'content-disposition: form-data; filename*="utf-8\'\'filename_%C2%A0_test"; name="test"\r\n'
+            "\r\n"
+            'content-type: application/json; {"field": "value"}\r\n'
+            "------sanic--\r\n",
+            "filename_\u00A0_test",
+        ),
     ],
 )
 def test_request_multipart_files(app, payload, filename):
@@ -743,7 +761,7 @@ def test_request_raw_args(app):
 
 def test_request_query_args(app):
     # test multiple params with the same key
-    params = [('test', 'value1'), ('test', 'value2')]
+    params = [("test", "value1"), ("test", "value2")]
 
     @app.get("/")
     def handler(request):
@@ -754,7 +772,10 @@ def test_request_query_args(app):
     assert request.query_args == params
 
     # test cached value
-    assert request.parsed_not_grouped_args[(False, False, "utf-8", "replace")] == request.query_args
+    assert (
+        request.parsed_not_grouped_args[(False, False, "utf-8", "replace")]
+        == request.query_args
+    )
 
     # test params directly in the url
     request, response = app.test_client.get("/?test=value1&test=value2")
@@ -762,7 +783,7 @@ def test_request_query_args(app):
     assert request.query_args == params
 
     # test unique params
-    params = [('test1', 'value1'), ('test2', 'value2')]
+    params = [("test1", "value1"), ("test2", "value2")]
 
     request, response = app.test_client.get("/", params=params)
 
@@ -779,25 +800,22 @@ def test_request_query_args_custom_parsing(app):
     def handler(request):
         return text("pass")
 
-    request, response = app.test_client.get("/?test1=value1&test2=&test3=value3")
+    request, response = app.test_client.get(
+        "/?test1=value1&test2=&test3=value3"
+    )
 
-    assert request.get_query_args(
-        keep_blank_values=True
-    ) == [
-        ('test1', 'value1'), ('test2', ''), ('test3', 'value3')
+    assert request.get_query_args(keep_blank_values=True) == [
+        ("test1", "value1"),
+        ("test2", ""),
+        ("test3", "value3"),
     ]
-    assert request.query_args == [
-        ('test1', 'value1'), ('test3', 'value3')
-    ]
-    assert request.get_query_args(
-        keep_blank_values=False
-    ) == [
-        ('test1', 'value1'), ('test3', 'value3')
+    assert request.query_args == [("test1", "value1"), ("test3", "value3")]
+    assert request.get_query_args(keep_blank_values=False) == [
+        ("test1", "value1"),
+        ("test3", "value3"),
     ]
 
-    assert request.get_args(
-        keep_blank_values=True
-    ) == RequestParameters(
+    assert request.get_args(keep_blank_values=True) == RequestParameters(
         {"test1": ["value1"], "test2": [""], "test3": ["value3"]}
     )
 
@@ -805,9 +823,7 @@ def test_request_query_args_custom_parsing(app):
         {"test1": ["value1"], "test3": ["value3"]}
     )
 
-    assert request.get_args(
-        keep_blank_values=False
-    ) == RequestParameters(
+    assert request.get_args(keep_blank_values=False) == RequestParameters(
         {"test1": ["value1"], "test3": ["value3"]}
     )
 

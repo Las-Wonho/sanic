@@ -1,11 +1,12 @@
 from json import JSONDecodeError
 from socket import socket
 
+import requests_async as requests
+import websockets
+
 from sanic.exceptions import MethodNotSupported
 from sanic.log import logger
 from sanic.response import text
-import requests_async as requests
-import websockets
 
 
 HOST = "127.0.0.1"
