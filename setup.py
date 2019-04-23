@@ -91,6 +91,7 @@ tests_require = [
     "gunicorn",
     "pytest-cov",
     "aiohttp>=2.3.0,<=3.2.1",
+    "requests-async",
     "beautifulsoup4",
     uvloop,
     ujson,
@@ -119,7 +120,7 @@ extras_require = {
         "recommonmark",
         "sphinxcontrib-asyncio",
         "docutils",
-        "pygments"
+        "pygments",
     ],
 }
 

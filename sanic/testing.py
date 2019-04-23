@@ -4,6 +4,8 @@ from socket import socket
 from sanic.exceptions import MethodNotSupported
 from sanic.log import logger
 from sanic.response import text
+import requests_async as requests
+import websockets
 
 
 HOST = "127.0.0.1"
@@ -16,32 +18,38 @@ class SanicTestClient:
         self.app = app
         self.port = port
 
-    async def _local_request(self, method, url, cookies=None, *args, **kwargs):
-        import aiohttp
-
+    async def _local_request(self, method, url, *args, **kwargs):
         logger.info(url)
-        conn = aiohttp.TCPConnector(ssl=False)
-        async with aiohttp.ClientSession(
-            cookies=cookies, connector=conn
-        ) as session:
-            async with getattr(session, method.lower())(
-                url, *args, **kwargs
-            ) as response:
-                try:
-                    response.text = await response.text()
-                except UnicodeDecodeError:
-                    response.text = None
+        raw_cookies = kwargs.pop("raw_cookies", None)
+
+        if method == "websocket":
+            async with websockets.connect(url, *args, **kwargs) as websocket:
+                websocket.opened = websocket.open
+                return websocket
+        else:
+            async with requests.Session() as session:
 
                 try:
-                    response.json = await response.json()
-                except (
-                    JSONDecodeError,
-                    UnicodeDecodeError,
-                    aiohttp.ClientResponseError,
-                ):
+                    response = await getattr(session, method.lower())(
+                        url, verify=False, *args, **kwargs
+                    )
+                except NameError:
+                    raise Exception(response.status_code)
+
+                try:
+                    response.json = response.json()
+                except (JSONDecodeError, UnicodeDecodeError):
                     response.json = None
 
                 response.body = await response.read()
+                response.status = response.status_code
+                response.content_type = response.headers.get("content-type")
+
+                if raw_cookies:
+                    response.raw_cookies = {}
+                    for cookie in response.cookies:
+                        response.raw_cookies[cookie.name] = cookie
+
                 return response
 
     def _sanic_endpoint_test(
@@ -83,11 +91,15 @@ class SanicTestClient:
             server_kwargs = dict(sock=sock, **server_kwargs)
             host, port = sock.getsockname()
 
-        if uri.startswith(("http:", "https:", "ftp:", "ftps://", "//")):
+        if uri.startswith(
+            ("http:", "https:", "ftp:", "ftps://", "//", "ws:", "wss:")
+        ):
             url = uri
         else:
-            url = "http://{host}:{port}{uri}".format(
-                host=host, port=port, uri=uri
+            uri = uri if uri.startswith("/") else "/{uri}".format(uri=uri)
+            scheme = "ws" if method == "websocket" else "http"
+            url = "{scheme}://{host}:{port}{uri}".format(
+                scheme=scheme, host=host, port=port, uri=uri
             )
 
         @self.app.listener("after_server_start")
@@ -146,3 +158,6 @@ class SanicTestClient:
 
     def head(self, *args, **kwargs):
         return self._sanic_endpoint_test("head", *args, **kwargs)
+
+    def websocket(self, *args, **kwargs):
+        return self._sanic_endpoint_test("websocket", *args, **kwargs)
