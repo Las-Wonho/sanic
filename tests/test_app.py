@@ -11,7 +11,7 @@ from sanic.response import text
 
 def uvloop_installed():
     try:
-        import uvloop
+        import uvloop  # noqa
 
         return True
     except ImportError:

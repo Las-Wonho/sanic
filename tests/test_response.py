@@ -18,7 +18,6 @@ from sanic.response import (
     json,
     raw,
     stream,
-    text,
 )
 from sanic.server import HttpProtocol
 from sanic.testing import HOST, PORT
@@ -77,10 +76,10 @@ def test_response_header(app):
 
     request, response = app.test_client.get("/")
     assert dict(response.headers) == {
-        "Connection": "keep-alive",
-        "Keep-Alive": str(app.config.KEEP_ALIVE_TIMEOUT),
-        "Content-Length": "11",
-        "Content-Type": "application/json",
+        "connection": "keep-alive",
+        "keep-alive": str(app.config.KEEP_ALIVE_TIMEOUT),
+        "content-length": "11",
+        "content-type": "application/json",
     }
 
 
@@ -276,7 +275,7 @@ def test_stream_response_with_cookies(app):
         return response
 
     request, response = app.test_client.get("/")
-    assert response.cookies["test"].value == "pass"
+    assert response.cookies["test"] == "pass"
 
 
 def test_stream_response_without_cookies(app):

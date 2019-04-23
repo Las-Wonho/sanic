@@ -467,16 +467,8 @@ def test_bp_shorthand(app):
     request, response = app.test_client.get("/delete")
     assert response.status == 405
 
-    request, response = app.test_client.get(
-        "/ws/",
-        headers={
-            "Upgrade": "websocket",
-            "Connection": "upgrade",
-            "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
-            "Sec-WebSocket-Version": "13",
-        },
-    )
-    assert response.status == 101
+    request, response = app.test_client.websocket("/ws/")
+    assert response.opened is True
     assert ev.is_set()
 
 
@@ -595,14 +587,13 @@ def test_blueprint_middleware_with_args(app: Sanic):
         "/wa", headers={"content-type": "plain/text"}
     )
     assert response.json.get("test") == "value"
-    d = {}
 
 
 @pytest.mark.parametrize("file_name", ["test.file"])
 def test_static_blueprint_name(app: Sanic, static_file_directory, file_name):
     current_file = inspect.getfile(inspect.currentframe())
     with open(current_file, "rb") as file:
-        current_file_contents = file.read()
+        file.read()
 
     bp = Blueprint(name="static", url_prefix="/static", strict_slashes=False)
 
@@ -662,16 +653,8 @@ def test_websocket_route(app: Sanic):
 
     app.blueprint(bp)
 
-    _, response = app.test_client.get(
-        "/ws/test",
-        headers={
-            "Upgrade": "websocket",
-            "Connection": "upgrade",
-            "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
-            "Sec-WebSocket-Version": "13",
-        },
-    )
-    assert response.status == 101
+    _, response = app.test_client.websocket("/ws/test")
+    assert response.opened is True
     assert event.is_set()
 
 

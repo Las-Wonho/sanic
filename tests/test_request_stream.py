@@ -1,4 +1,3 @@
-import asyncio
 from sanic.blueprints import Blueprint
 from sanic.views import CompositionView
 from sanic.views import HTTPMethodView

@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from http.cookies import SimpleCookie
 from sanic.response import text
 import pytest
-from sanic.cookies import Cookie, DEFAULT_MAX_AGE
+from sanic.cookies import Cookie
 
 # ------------------------------------------------------------ #
 #  GET
@@ -100,7 +100,7 @@ def test_cookie_deletion(app):
 
     assert int(response_cookies["i_want_to_die"]["max-age"]) == 0
     with pytest.raises(KeyError):
-        _ = response.cookies["i_never_existed"]
+        response.cookies["i_never_existed"]
 
 
 def test_cookie_reserved_cookie():
@@ -135,7 +135,7 @@ def test_cookie_set_same_key(app):
 
     request, response = app.test_client.get("/", cookies=cookies)
     assert response.status == 200
-    assert response.cookies["test"].value == "pass"
+    assert response.cookies["test"] == "pass"
 
 
 @pytest.mark.parametrize("max_age", ["0", 30, 30.0, 30.1, "30", "test"])
@@ -149,19 +149,35 @@ def test_cookie_max_age(app, max_age):
         response.cookies["test"]["max-age"] = max_age
         return response
 
-    request, response = app.test_client.get("/", cookies=cookies)
+    request, response = app.test_client.get(
+        "/", cookies=cookies, raw_cookies=True
+    )
     assert response.status == 200
 
-    assert response.cookies["test"].value == "pass"
+    cookie = response.cookies.get("test")
+    if (
+        str(max_age).isdigit()
+        and int(max_age) == float(max_age)
+        and int(max_age) != 0
+    ):
+        cookie_expires = datetime.utcfromtimestamp(
+            response.raw_cookies["test"].expires
+        ).replace(microsecond=0)
+        expires = datetime.utcnow().replace(microsecond=0) + timedelta(
+            seconds=int(max_age)
+        )
 
-    if str(max_age).isdigit() and int(max_age) == float(max_age):
-        assert response.cookies["test"]["max-age"] == str(max_age)
+        assert cookie == "pass"
+        assert cookie_expires == expires
     else:
-        assert response.cookies["test"]["max-age"] == str(DEFAULT_MAX_AGE)
+        assert cookie is None
 
 
-@pytest.mark.parametrize("expires", [datetime.now() + timedelta(seconds=60)])
+@pytest.mark.parametrize(
+    "expires", [datetime.utcnow() + timedelta(seconds=60)]
+)
 def test_cookie_expires(app, expires):
+    expires = expires.replace(microsecond=0)
     cookies = {"test": "wait"}
 
     @app.get("/")
@@ -171,15 +187,16 @@ def test_cookie_expires(app, expires):
         response.cookies["test"]["expires"] = expires
         return response
 
-    request, response = app.test_client.get("/", cookies=cookies)
+    request, response = app.test_client.get(
+        "/", cookies=cookies, raw_cookies=True
+    )
+    cookie_expires = datetime.utcfromtimestamp(
+        response.raw_cookies["test"].expires
+    ).replace(microsecond=0)
+
     assert response.status == 200
-
-    assert response.cookies["test"].value == "pass"
-
-    if isinstance(expires, datetime):
-        expires = expires.strftime("%a, %d-%b-%Y %T GMT")
-
-    assert response.cookies["test"]["expires"] == expires
+    assert response.cookies["test"] == "pass"
+    assert cookie_expires == expires
 
 
 @pytest.mark.parametrize("expires", ["Fri, 21-Dec-2018 15:30:00 GMT"])
