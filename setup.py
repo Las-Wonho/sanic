@@ -50,12 +50,12 @@ with open_local(["README.rst"]) as rm:
 setup_kwargs = {
     "name": "sanic",
     "version": version,
-    "url": "http://github.com/channelcat/sanic/",
+    "url": "http://github.com/huge-success/sanic/",
     "license": "MIT",
-    "author": "Channel Cat",
-    "author_email": "channelcat@gmail.com",
+    "author": "Sanic Community",
+    "author_email": "admhpkns@gmail.com",
     "description": (
-        "A microframework based on uvloop, httptools, and learnings of flask"
+        "A web server and web framework that's written to go fast. Build fast. Run fast."
     ),
     "long_description": long_description,
     "packages": ["sanic"],
@@ -64,7 +64,6 @@ setup_kwargs = {
         "Development Status :: 4 - Beta",
         "Environment :: Web Environment",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
