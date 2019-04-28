@@ -24,7 +24,7 @@ matrix:
 install:
   - pip install -U tox
   - pip install codecov
-script: travis_retry tox -e $TOX_ENV --no-use-pep517
+script: travis_retry tox -e $TOX_ENV
 after_success:
   - codecov
 deploy:

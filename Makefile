@@ -52,7 +52,7 @@ endif
 endif
 
 black:
-	black --config ./pyproject.toml sanic tests
+	black --config ./.black.toml sanic tests
 
 fix-import: black
 	isort -rc sanic
